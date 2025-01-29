@@ -1,11 +1,13 @@
-
 import 'package:flutter/widgets.dart';
 import 'package:html/parser.dart' show parse;
 import 'package:html/dom.dart' as dom;
 import 'package:ruby_text/ruby_text.dart';
 
+/// A Flutter widget to display HTML ruby tags
 class RubyHtml extends StatelessWidget {
-  const RubyHtml(this.html, {
+  /// Constructor
+  const RubyHtml(
+    this.html, {
     super.key,
     this.style,
     this.mainStyle,
@@ -16,13 +18,28 @@ class RubyHtml extends StatelessWidget {
     this.maxLines,
   });
 
+  /// HTML string
   final String html;
+
+  /// Default text style
   final TextStyle? style;
+
+  /// Main text style
   final TextStyle? mainStyle;
+
+  /// Ruby text style
   final TextStyle? rubyStyle;
+
+  /// Text align, same with ruby_text package
   final TextAlign? textAlign;
+
+  /// Same with ruby_text package
   final bool? softWrap;
+
+  /// Same with ruby_text package
   final TextOverflow? overflow;
+
+  /// Same with ruby_text package
   final int? maxLines;
 
   @override
@@ -34,7 +51,9 @@ class RubyHtml extends StatelessWidget {
       // debugPrint('node type: ${node.nodeType} text: ${node.text}');
       if (node.nodeType == dom.Node.TEXT_NODE) {
         if (node.text != null && node.text!.isNotEmpty) {
-          rubyTexts.add(RubyTextData(node.text!, ruby: '', style: style),);
+          rubyTexts.add(
+            RubyTextData(node.text!, ruby: '', style: style),
+          );
         }
       } else if (node.nodeType == dom.Node.ELEMENT_NODE) {
         dom.Element element = node as dom.Element;
@@ -55,12 +74,14 @@ class RubyHtml extends StatelessWidget {
 
             // main text (ruby text) pair
             if (mainText.isNotEmpty && rubyText.isNotEmpty) {
-              rubyTexts.add(RubyTextData(
-                mainText,
-                ruby: rubyText,
-                style: mainStyle,
-                rubyStyle: rubyStyle,
-              ),);
+              rubyTexts.add(
+                RubyTextData(
+                  mainText,
+                  ruby: rubyText,
+                  style: mainStyle,
+                  rubyStyle: rubyStyle,
+                ),
+              );
               mainText = '';
               rubyText = '';
             }
@@ -68,12 +89,14 @@ class RubyHtml extends StatelessWidget {
 
           // last text
           if (mainText.isNotEmpty) {
-            rubyTexts.add(RubyTextData(
-              mainText,
-              ruby: rubyText,
-              style: style,
-              rubyStyle: rubyStyle,
-            ),);
+            rubyTexts.add(
+              RubyTextData(
+                mainText,
+                ruby: rubyText,
+                style: style,
+                rubyStyle: rubyStyle,
+              ),
+            );
           }
         }
       }
@@ -87,6 +110,4 @@ class RubyHtml extends StatelessWidget {
       maxLines: maxLines,
     );
   }
-
 }
-

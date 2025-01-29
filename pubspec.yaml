@@ -1,8 +1,8 @@
 name: ruby_html
-description: "A Flutter widget to display HTML ruby tags."
-version: 1.0.0
-author: Takehara Yuta <takehara.code@gmail.com>
-homepage: https://github.com/itome/flutter_circle_color_picker
+description: "A Flutter widget to display HTML ruby tags. This widget is based on the ruby_text package."
+homepage: https://github.com/takehara-yuta/ruby-html
+
+version: 1.0.1
 
 environment:
   sdk: ^3.6.1
