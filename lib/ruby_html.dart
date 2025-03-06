@@ -1,22 +1,21 @@
 import 'package:flutter/widgets.dart';
-import 'package:html/parser.dart' show parse;
 import 'package:html/dom.dart' as dom;
+import 'package:html/parser.dart' show parse;
 import 'package:ruby_text/ruby_text.dart';
 
 /// A Flutter widget to display HTML ruby tags
 class RubyHtml extends StatelessWidget {
   /// Constructor
-  const RubyHtml(
-    this.html, {
-    super.key,
-    this.style,
-    this.mainStyle,
-    this.rubyStyle,
-    this.textAlign,
-    this.softWrap,
-    this.overflow,
-    this.maxLines,
-  });
+  const RubyHtml(this.html,
+      {super.key,
+      this.style,
+      this.mainStyle,
+      this.rubyStyle,
+      this.textAlign,
+      this.softWrap,
+      this.overflow,
+      this.maxLines,
+      this.speechText});
 
   /// HTML string
   final String html;
@@ -42,6 +41,8 @@ class RubyHtml extends StatelessWidget {
   /// Same with ruby_text package
   final int? maxLines;
 
+  final String? speechText;
+
   @override
   Widget build(BuildContext context) {
     List<RubyTextData> rubyTexts = [];
@@ -51,9 +52,18 @@ class RubyHtml extends StatelessWidget {
       // debugPrint('node type: ${node.nodeType} text: ${node.text}');
       if (node.nodeType == dom.Node.TEXT_NODE) {
         if (node.text != null && node.text!.isNotEmpty) {
-          rubyTexts.add(
-            RubyTextData(node.text!, ruby: '', style: style),
-          );
+          if (speechText != null &&
+              style != null &&
+              speechText!.contains(_removePunctuation(node.text!))) {
+            TextStyle markedStyle = style!.copyWith(color: Color(0xff000000));
+            rubyTexts.add(
+              RubyTextData(node.text!, ruby: '', style: markedStyle),
+            );
+          } else {
+            rubyTexts.add(
+              RubyTextData(node.text!, ruby: '', style: style),
+            );
+          }
         }
       } else if (node.nodeType == dom.Node.ELEMENT_NODE) {
         dom.Element element = node as dom.Element;
@@ -74,14 +84,34 @@ class RubyHtml extends StatelessWidget {
 
             // main text (ruby text) pair
             if (mainText.isNotEmpty && rubyText.isNotEmpty) {
-              rubyTexts.add(
-                RubyTextData(
-                  mainText,
-                  ruby: rubyText,
-                  style: mainStyle,
-                  rubyStyle: rubyStyle,
-                ),
-              );
+              if (speechText != null &&
+                  mainStyle != null &&
+                  rubyStyle != null &&
+                  speechText!.contains(
+                      _removeJapaneseKana(_removePunctuation(node.text)))) {
+                TextStyle markedStyle =
+                    mainStyle!.copyWith(color: Color(0xff000000));
+                TextStyle markedRubyStyle =
+                    rubyStyle!.copyWith(color: Color(0x00ffffff));
+                rubyTexts.add(
+                  RubyTextData(
+                    mainText,
+                    ruby: rubyText,
+                    style: markedStyle,
+                    rubyStyle: markedRubyStyle,
+                  ),
+                );
+              } else {
+                rubyTexts.add(
+                  RubyTextData(
+                    mainText,
+                    ruby: rubyText,
+                    style: mainStyle,
+                    rubyStyle: rubyStyle,
+                  ),
+                );
+              }
+
               mainText = '';
               rubyText = '';
             }
@@ -89,14 +119,31 @@ class RubyHtml extends StatelessWidget {
 
           // last text
           if (mainText.isNotEmpty) {
-            rubyTexts.add(
-              RubyTextData(
-                mainText,
-                ruby: rubyText,
-                style: style,
-                rubyStyle: rubyStyle,
-              ),
-            );
+            if (speechText != null &&
+                mainStyle != null &&
+                rubyStyle != null &&
+                speechText!.contains(_removePunctuation(node.text))) {
+              TextStyle markedStyle = style!.copyWith(color: Color(0xff000000));
+              TextStyle markedRubyStyle =
+                  rubyStyle!.copyWith(color: Color(0x00000000));
+              rubyTexts.add(
+                RubyTextData(
+                  mainText,
+                  ruby: rubyText,
+                  style: markedStyle,
+                  rubyStyle: markedRubyStyle,
+                ),
+              );
+            } else {
+              rubyTexts.add(
+                RubyTextData(
+                  mainText,
+                  ruby: rubyText,
+                  style: style,
+                  rubyStyle: rubyStyle,
+                ),
+              );
+            }
           }
         }
       }
@@ -109,5 +156,14 @@ class RubyHtml extends StatelessWidget {
       overflow: overflow,
       maxLines: maxLines,
     );
+  }
+
+  String _removePunctuation(String text) {
+    return text.replaceAll(RegExp(r'[、。！？（）「」『』【】]'), ''); // 添加你需要去除的标点符号
+  }
+
+  String _removeJapaneseKana(String input) {
+    final regex = RegExp(r'[\u3040-\u309F\u30A0-\u30FF]'); // 平假名 + 片假名
+    return input.replaceAll(regex, '');
   }
 }
