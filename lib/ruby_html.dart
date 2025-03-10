@@ -8,14 +8,14 @@ class RubyHtml extends StatelessWidget {
   /// Constructor
   const RubyHtml(this.html,
       {super.key,
-      this.style,
-      this.mainStyle,
-      this.rubyStyle,
-      this.textAlign,
-      this.softWrap,
-      this.overflow,
-      this.maxLines,
-      this.speechText});
+        this.style,
+        this.mainStyle,
+        this.rubyStyle,
+        this.textAlign,
+        this.softWrap,
+        this.overflow,
+        this.maxLines,
+        this.speechText});
 
   /// HTML string
   final String html;
@@ -52,18 +52,9 @@ class RubyHtml extends StatelessWidget {
       // debugPrint('node type: ${node.nodeType} text: ${node.text}');
       if (node.nodeType == dom.Node.TEXT_NODE) {
         if (node.text != null && node.text!.isNotEmpty) {
-          if (speechText != null &&
-              style != null &&
-              speechText!.contains(_removePunctuation(node.text!))) {
-            TextStyle markedStyle = style!.copyWith(color: Color(0xff000000));
-            rubyTexts.add(
-              RubyTextData(node.text!, ruby: '', style: markedStyle),
-            );
-          } else {
-            rubyTexts.add(
-              RubyTextData(node.text!, ruby: '', style: style),
-            );
-          }
+          rubyTexts.add(
+            RubyTextData(node.text!, ruby: '', style: style),
+          );
         }
       } else if (node.nodeType == dom.Node.ELEMENT_NODE) {
         dom.Element element = node as dom.Element;
@@ -87,12 +78,13 @@ class RubyHtml extends StatelessWidget {
               if (speechText != null &&
                   mainStyle != null &&
                   rubyStyle != null &&
+                  speechText != "" &&
                   speechText!.contains(
                       _removeJapaneseKana(_removePunctuation(node.text)))) {
                 TextStyle markedStyle =
-                    mainStyle!.copyWith(color: Color(0xff000000));
+                mainStyle!.copyWith(color: Color(0xff000000));
                 TextStyle markedRubyStyle =
-                    rubyStyle!.copyWith(color: Color(0x00ffffff));
+                rubyStyle!.copyWith(color: Color(0x00ffffff));
                 rubyTexts.add(
                   RubyTextData(
                     mainText,
@@ -122,10 +114,11 @@ class RubyHtml extends StatelessWidget {
             if (speechText != null &&
                 mainStyle != null &&
                 rubyStyle != null &&
+                speechText != "" &&
                 speechText!.contains(_removePunctuation(node.text))) {
               TextStyle markedStyle = style!.copyWith(color: Color(0xff000000));
               TextStyle markedRubyStyle =
-                  rubyStyle!.copyWith(color: Color(0x00000000));
+              rubyStyle!.copyWith(color: Color(0x00000000));
               rubyTexts.add(
                 RubyTextData(
                   mainText,
@@ -149,8 +142,11 @@ class RubyHtml extends StatelessWidget {
       }
     }
 
+    final List<RubyTextData> rubyTextsSeparated =
+    _processRubyTextList(rubyTexts);
+
     return RubyText(
-      rubyTexts,
+      rubyTextsSeparated,
       textAlign: textAlign,
       softWrap: softWrap,
       overflow: overflow,
@@ -159,11 +155,52 @@ class RubyHtml extends StatelessWidget {
   }
 
   String _removePunctuation(String text) {
-    return text.replaceAll(RegExp(r'[、。！？（）「」『』【】]'), ''); // 添加你需要去除的标点符号
+    return text.replaceAll(RegExp(r'[、。！？（）「」『』【】]'), '');
   }
 
   String _removeJapaneseKana(String input) {
-    final regex = RegExp(r'[\u3040-\u309F\u30A0-\u30FF]'); // 平假名 + 片假名
+    final regex = RegExp(r'[\u3040-\u309F\u30A0-\u30FF]');
     return input.replaceAll(regex, '');
+  }
+
+  String _removeKanji(String input) {
+    return input.replaceAll(RegExp(r'[\u4E00-\u9FFF\u3400-\u4DBF]'), '');
+  }
+
+  bool _isJapanesePunctuation(String char) {
+    return RegExp(
+        r'[\u3000-\u303F\uFF01-\uFF0F\uFF1A-\uFF20\uFF3B-\uFF40\uFF5B-\uFF60\u30FBー.,?!:;(){}[\]<>-]')
+        .hasMatch(char);
+  }
+
+  List<RubyTextData> _processRubyTextList(List<RubyTextData> list) {
+    String kana = _removeKanji(speechText ?? "");
+    if (kana.isEmpty) {
+      return list;
+    }
+
+    int speechIndex = 0;
+
+    return list.expand((item) {
+      if (item.ruby == null) {
+        return [item];
+      } else if (item.ruby!.isEmpty) {
+        return item.text.split('').map((char) {
+          if (_isJapanesePunctuation(char)) {
+            TextStyle markedStyle = style!.copyWith(color: Color(0xff000000));
+            return item.copyWith(text: char, style: markedStyle);
+          }
+          if (speechIndex < kana.length &&
+              _removePunctuation(char) == kana[speechIndex]) {
+            speechIndex++;
+            TextStyle markedStyle = style!.copyWith(color: Color(0xff000000));
+            return item.copyWith(text: char, style: markedStyle);
+          }
+          return item.copyWith(text: char);
+        });
+      } else {
+        return [item];
+      }
+    }).toList();
   }
 }
