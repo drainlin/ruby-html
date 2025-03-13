@@ -175,31 +175,49 @@ class RubyHtml extends StatelessWidget {
 
   List<RubyTextData> _processRubyTextList(List<RubyTextData> list) {
     String kana = _removeKanji(speechText ?? "");
+    String pureKana = _removePunctuation(kana);
     if (kana.isEmpty) {
       return list;
     }
 
-    int speechIndex = 0;
+    int targetIndex = 0;
 
-    return list.expand((item) {
+    List<RubyTextData> slices = list.expand((item) {
       if (item.ruby == null) {
         return [item];
       } else if (item.ruby!.isEmpty) {
         return item.text.split('').map((char) {
-          if (_isJapanesePunctuation(char)) {
-            TextStyle markedStyle = style!.copyWith(color: Color(0xff000000));
-            return item.copyWith(text: char, style: markedStyle);
-          }
-          if (speechIndex < kana.length &&
-              _removePunctuation(char) == kana[speechIndex]) {
-            speechIndex++;
-            TextStyle markedStyle = style!.copyWith(color: Color(0xff000000));
-            return item.copyWith(text: char, style: markedStyle);
-          }
           return item.copyWith(text: char);
-        });
+        }).toList();
       } else {
         return [item];
+      }
+    }).toList();
+
+    TextStyle markedStyle = (style ?? TextStyle()).copyWith(
+        color: Color(0xff000000));
+
+    for (String char in pureKana.split('')) {
+      while (targetIndex < slices.length && (slices[targetIndex].ruby != "" ||
+          _isJapanesePunctuation(slices[targetIndex].text))
+      ) {
+        targetIndex++;
+      }
+      if (targetIndex >= slices.length) break;
+      for (int i = targetIndex; i < slices.length; i++) {
+        if (slices[i].text == char) {
+          slices[i] =
+              slices[i].copyWith(style: markedStyle);
+          targetIndex = i + 1;
+          break;
+        }
+      }
+    }
+    return slices.map((e) {
+      if (_isJapanesePunctuation(e.text)) {
+        return e.copyWith(style: markedStyle);
+      } else {
+        return e;
       }
     }).toList();
   }
